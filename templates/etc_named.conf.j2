@@ -65,32 +65,33 @@ statistics-channels {
 };
 {% endif %}
 
+{% if bind_logging is defined %}
 logging {
-  channel default_debug {
-
-{% if bind_log_syslog | default(false) %}
-    syslog {{ bind_log_syslog_facility | default('daemon') }};
-{% else %}
-    file "{{ bind_log | default('/var/log/bind/named.log') }}";
-{% endif %}
-
-    severity {{ bind_log_severity | default('dynamic') }};
+{% for channel in bind_logging.channels %}
+  channel {{ channel.name }} {
+    {% if channel.syslog is defined %}
+    syslog {{ channel.syslog }};
+    {% endif %}
+    {% if channel.severity is defined %}
+    severity {{ channel.severity }};
+    {% endif %}
+    {% if channel.print_time | default(false) %}
     print-time yes;
+    {% endif %}
+    {% if channel.print_severity | default(false) %}
     print-severity yes;
+    {% endif %}
+    {% if channel.print_category | default(false) %}
     print-category yes;
+    {% endif %}
   };
-
-{% if bind_log_categories is defined %}
-{% for cat in bind_log_categories %}
-  category {{ cat }} { default_debug; };
 {% endfor %}
-{% else %}
-  category default { default_debug; };
-  category general { default_debug; };
-  category security { default_debug; };
-{% endif %}
 
+{% for cat in bind_logging.categories %}
+  category {{ cat.name }} { {{ cat.channel }}; };
+{% endfor %}
 };
+{% endif %}
 
 {% if bind_query_log is defined %}
   channel querylog {
