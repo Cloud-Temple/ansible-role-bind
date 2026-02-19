@@ -51,20 +51,18 @@ options {
 {% endif %}
   dnssec-validation {{ bind_dnssec_validation }};
 
-  /* Path to ISC DLV key */
   bindkeys-file "{{ bind_bindkeys_file }}";
-
   managed-keys-directory "{{ bind_dir }}/dynamic";
-
   pid-file "{{ bind_pid_file }}";
   session-keyfile "{{ bind_session_keyfile }}";
-{% if bind_query_log is defined %}
 
+{% if bind_query_log is defined %}
   querylog yes;
 {% endif %}
+
 {% if bind_dns64 %}
   dns64 64:ff9b::/96 {
-    clients { {{ bind_dns64_clients|join('; ') }};  };
+    clients { {{ bind_dns64_clients|join('; ') }}; };
   };
 {% endif %}
 };
@@ -149,9 +147,11 @@ logging {
 {% for file in bind_default_zone_files %}
 include "{{ file }}";
 {% endfor %}
+
 {% for file in bind_extra_include_files %}
 include "{{ file }}";
 {% endfor %}
+
 {% if bind_zones is defined %}
 {% for bind_zone in bind_zones %}
 
@@ -164,7 +164,7 @@ include "{{ file }}";
 {% set _type = 'secondary' %}
 {% elif zone_type == 'forward' %}
 {% set _type = 'forward' %}
-{% elif bind_zone.primaries is defined and (_all_addresses|intersect(bind_zone.primaries)|length > 0) %}
+{% elif bind_zone.primaries is defined and (_all_addresses | intersect(bind_zone.primaries) | length > 0) %}
 {% set _type = 'primary' %}
 {% elif bind_zone.primaries is defined %}
 {% set _type = 'secondary' %}
@@ -172,14 +172,6 @@ include "{{ file }}";
 {% set _type = 'forward' %}
 {% else %}
 {% set _type = 'primary' %}
-{% endif %}
-
-{% elif bind_zone.primaries is defined and (_all_addresses|intersect(bind_zone.primaries)|length > 0) %}
-{% set _type = 'primary' %}
-{% elif bind_zone.primaries is defined %}
-{% set _type = 'secondary' %}
-{% elif bind_zone.forwarders is defined %}
-{% set _type = 'forward' %}
 {% endif %}
 
 zone "{{ bind_zone.name }}" IN {
