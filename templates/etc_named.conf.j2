@@ -80,7 +80,7 @@ statistics-channels {
 {% if bind_logging is defined or bind_query_log is defined or bind_other_logs is defined %}
 logging {
 
-{% if bind_logging is defined %}
+{% if bind_logging is defined and bind_logging.channels is defined %}
 {% for channel in bind_logging.channels %}
   channel {{ channel.name }} {
 
@@ -109,7 +109,9 @@ logging {
 {% endif %}
   };
 {% endfor %}
+{% endif %}
 
+{% if bind_logging is defined and bind_logging.categories is defined %}
 {% for cat in bind_logging.categories %}
   category {{ cat.name }} { {{ cat.channel }}; };
 {% endfor %}
@@ -118,9 +120,9 @@ logging {
 {% if bind_query_log is defined %}
   channel querylog {
 {% if bind_query_log.file is defined %}
-    file "{{ bind_query_log.file }}" versions {{ bind_query_log.versions }} size {{ bind_query_log.size }};
+    file "{{ bind_query_log.file }}" versions {{ bind_query_log.versions | default(10) }} size {{ bind_query_log.size | default('20m') }};
 {% else %}
-    file "{{ bind_query_log }}" versions 600 size 20m;
+    file "{{ bind_query_log }}" versions 10 size 20m;
 {% endif %}
     severity dynamic;
     print-time yes;
@@ -131,11 +133,11 @@ logging {
 {% if bind_other_logs is defined %}
 {% for log in bind_other_logs %}
   channel {{ log.name }} {
-    file "{{ log.file }}" versions {{ log.versions }} size {{ log.size }};
-    severity dynamic;
+    file "{{ log.file }}" versions {{ log.versions | default(5) }} size {{ log.size | default('10m') }};
+    severity {{ log.severity | default('dynamic') }};
     print-time yes;
   };
-  category {{ log.name }} { {{ log.name }}; };
+  category {{ log.category | default(log.name) }} { {{ log.name }}; };
 {% endfor %}
 {% endif %}
 
