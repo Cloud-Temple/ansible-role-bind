@@ -18,28 +18,38 @@ options {
 {% for port in bind_listen_ipv6_port %}
   listen-on-v6 port {{ port }} { {{ bind_listen_ipv6|join('; ') }}; };
 {% endfor %}
-  directory   "{{ bind_dir }}";
-  dump-file   "{{ bind_dir }}/data/cache_dump.db";
+  directory "{{ bind_dir }}";
+  dump-file "{{ bind_dir }}/data/cache_dump.db";
   statistics-file "{{ bind_dir }}/data/named_stats.txt";
   memstatistics-file "{{ bind_dir }}/data/named_mem_stats.txt";
-  allow-query     { {{ bind_allow_query|join('; ') }}; };
+  allow-query { {{ bind_allow_query|join('; ') }}; };
+
 {% if bind_acls|length != 0 %}
-  allow-transfer  { {% for acl in bind_acls %}"{{ acl.name }}"; {% endfor %}};
+  allow-transfer { {% for acl in bind_acls %}"{{ acl.name }}"; {% endfor %} };
 {% endif %}
+
 {% if bind_check_names is defined %}
-  check-names  {{ bind_check_names }};
+  check-names {{ bind_check_names }};
 {% endif %}
 
   recursion {% if bind_recursion %}yes{% else %}no{% endif %};
-  {% if bind_recursion %}allow-recursion { {{ bind_allow_recursion|join('; ') }}; };
-  {% endif %}
-{% if bind_forwarders|length > 0 %}forwarders { {{ bind_forwarders|join('; ') }}; };{% endif %}
-  {% if bind_forward_only %}forward only;{% endif %}
+{% if bind_recursion %}
+  allow-recursion { {{ bind_allow_recursion|join('; ') }}; };
+{% endif %}
+
+{% if bind_forwarders|length > 0 %}
+  forwarders { {{ bind_forwarders|join('; ') }}; };
+{% endif %}
+{% if bind_forward_only %}
+  forward only;
+{% endif %}
 
   rrset-order { order {{ bind_rrset_order }}; };
 
-{% if bind_dnssec_enable %}  dnssec-enable {{ bind_dnssec_enable }};{% endif %}
-  dnssec-validation {{ bind_dnssec_validation }};
+{% if bind_dnssec_enable %}
+  dnssec-enable {{ bind_dnssec_enable }};
+{% endif %}
+  dnssec-validation {{ bind_dnssec_validation }};
 
   /* Path to ISC DLV key */
   bindkeys-file "{{ bind_bindkeys_file }}";
@@ -65,42 +75,38 @@ statistics-channels {
 };
 {% endif %}
 
+{# ================= LOGGING BLOCK ================= #}
+
 {% if bind_logging is defined or bind_query_log is defined or bind_other_logs is defined %}
 logging {
+
 {% if bind_logging is defined %}
 {% for channel in bind_logging.channels %}
   channel {{ channel.name }} {
 
-    {% if channel.syslog is defined %}
+{% if channel.syslog is defined %}
     syslog {{ channel.syslog }};
-    {% endif %}
+{% endif %}
 
-    {% if channel.file is defined %}
+{% if channel.file is defined %}
     file "{{ channel.file }}"
-    {% if channel.versions is defined %}
-      versions {{ channel.versions }}
-    {% endif %}
-    {% if channel.size is defined %}
-      size {{ channel.size }}
-    {% endif %}
-    ;
-    {% endif %}
+{% if channel.versions is defined %} versions {{ channel.versions }}{% endif %}
+{% if channel.size is defined %} size {{ channel.size }}{% endif %};
+{% endif %}
 
-    {% if channel.severity is defined %}
+{% if channel.severity is defined %}
     severity {{ channel.severity }};
-    {% endif %}
+{% endif %}
 
-    {% if channel.print_time | default(false) %}
+{% if channel.print_time | default(false) %}
     print-time yes;
-    {% endif %}
-
-    {% if channel.print_severity | default(false) %}
+{% endif %}
+{% if channel.print_severity | default(false) %}
     print-severity yes;
-    {% endif %}
-
-    {% if channel.print_category | default(false) %}
+{% endif %}
+{% if channel.print_category | default(false) %}
     print-category yes;
-    {% endif %}
+{% endif %}
   };
 {% endfor %}
 
@@ -136,30 +142,7 @@ logging {
 };
 {% endif %}
 
-{% if bind_query_log is defined %}
-  channel querylog {
-{% if bind_query_log.file is defined %}
-    file "{{ bind_query_log.file }}" versions {{ bind_query_log.versions }} size {{ bind_query_log.size }};
-{% else %}
-    file "{{ bind_query_log }}" versions 600 size 20m;
-{% endif %}
-    severity dynamic;
-    print-time yes;
-  };
-  category queries { querylog; };
-{% endif %}
-{% if bind_other_logs is defined %}
-
-{% for log in bind_other_logs %}
-  channel {{ log.name }} {
-    file "{{ log.file }}" versions {{ log.versions }} size {{ log.size }};
-    severity dynamic;
-    print-time yes;
-  };
-  category "{{ log.name }}" { "{{ log.name }}"; };
-{% endfor %}
-{% endif %}
-};
+{# ================= ZONES ================= #}
 
 {% for file in bind_default_zone_files %}
 include "{{ file }}";
@@ -173,103 +156,4 @@ include "{{ file }}";
 {% if bind_zone.create_forward_zones is not defined or bind_zone.create_forward_zones %}
 {# Start: set zone type  #}
 {% set _all_addresses = ansible_all_ipv4_addresses | union(ansible_all_ipv6_addresses) %}
-{% if bind_zone.type is defined and bind_zone.type == 'primary' %}
-{% set _type = 'primary' %}
-{% elif bind_zone.type is defined and bind_zone.type == 'secondary' %}
-{% set _type = 'secondary' %}
-{% elif bind_zone.type is defined and bind_zone.type == 'forward' %}
-{% set _type = 'forward' %}
-{% elif bind_zone.type is not defined and bind_zone.primaries is defined and (_all_addresses|intersect(bind_zone.primaries)|length > 0) %}
-{% set _type = 'primary' %}
-{% elif bind_zone.type is not defined and bind_zone.primaries is defined and not (_all_addresses|intersect(bind_zone.primaries)|length > 0) %}
-{% set _type = 'secondary' %}
-{% elif bind_zone.type is not defined and bind_zone.forwarders is defined %}
-{% set _type = 'forward' %}
-{% endif %}
-{# End: set zone type #}
-zone "{{ bind_zone.name }}" IN {
-{% if _type == 'primary' %}
-  type master;
-  file "{{ bind_zone_dir }}/{{ bind_zone.name }}";
-  notify yes;
-{% if bind_zone.also_notify is defined %}
-  also-notify  { {{ bind_zone.also_notify|join('; ') }}; };
-{% endif %}
-{% if bind_zone.allow_update is defined %}
-  allow-update { {{ bind_zone.allow_update|join('; ') }}; };
-{% else %}
-  allow-update { none; };
-{% endif %}
-{% elif _type == 'secondary' %}
-  type slave;
-  masters { {{ bind_zone.primaries|join('; ') }}; };
-  file "{{ bind_secondary_dir }}/{{ bind_zone.name }}";
-{% elif _type == 'forward' %}
-  type forward;
-  forward only;
-  forwarders { {{ bind_zone.forwarders|join('; ') }}; };
-{% endif %}
-};
-{% endif %}
-{% if bind_zone.networks is defined %}
-{% if bind_zone.create_reverse_zones is not defined or bind_zone.create_reverse_zones %}
-{% for network in bind_zone.networks %}
-
-zone "{{ ('.'.join(network.replace(network+'.','').split('.')[::-1])) }}.in-addr.arpa" IN {
-{% if _type == 'primary' %}
-  type master;
-  file "{{ bind_zone_dir }}/{{ ('.'.join(network.replace(network+'.','').split('.')[::-1])) }}.in-addr.arpa";
-  notify yes;
-{% if bind_zone.also_notify is defined %}
-  also-notify  { {{ bind_zone.also_notify|join('; ') }}; };
-{% endif %}
-{% if bind_zone.allow_update is defined %}
-  allow-update { {{ bind_zone.allow_update|join('; ') }}; };
-{% else %}
-  allow-update { none; };
-{% endif %}
-{% elif _type == 'secondary' %}
-  type slave;
-  masters { {{ bind_zone.primaries|join('; ') }}; };
-  file "{{ bind_secondary_dir }}/{{ ('.'.join(network.replace(network+'.','').split('.')[::-1])) }}.in-addr.arpa";
-{% elif _type == 'forward' %}
-  type forward;
-  forward only;
-  forwarders { {{ bind_zone.forwarders|join('; ') }}; };
-{% endif %}
-};
-{% endfor %}
-{% endif %}
-{% endif %}
-{% if bind_zone.ipv6_networks is defined %}
-{% if bind_zone.create_reverse_zones is not defined or bind_zone.create_reverse_zones %}
-{% for network in bind_zone.ipv6_networks %}
-
-zone "{{ (network | ipaddr('revdns'))[-(9+(network|regex_replace('^.*/','')|int)//2):] }}" IN {
-{% if _type == 'primary' %}
-  type master;
-  file "{{ bind_zone_dir }}/{{ (network | ipaddr('revdns'))[-(9+(network|regex_replace('^.*/','')|int)//2):-1] }}";
-  notify yes;
-{% if bind_zone.also_notify is defined %}
-  also-notify  { {{ bind_zone.also_notify|join('; ') }}; };
-{% endif %}
-{% if bind_zone.allow_update is defined %}
-  allow-update { {{ bind_zone.allow_update|join('; ') }}; };
-{% else %}
-  allow-update { none; };
-{% endif %}
-{% elif _type == 'secondary' %}
-  type slave;
-  masters { {{ bind_zone.primaries|join('; ') }}; };
-  file "{{ bind_secondary_dir }}/{{ (network | ipaddr('revdns'))[-(9+(network|regex_replace('^.*/','')|int)//2):-1] }}";
-{% elif _type == 'forward' %}
-  type forward;
-  forward only;
-  forwarders { {{ bind_zone.forwarders|join('; ') }}; };
-{% endif %}
-};
-{% endfor %}
-{% endif %}
-{% endif %}
-{% endfor %}
-{% endif %}
+{% if bind
