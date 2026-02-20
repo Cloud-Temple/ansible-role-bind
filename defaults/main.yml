@@ -84,3 +84,17 @@ bind_python_version: "{{ bind_default_python_version }}"
 
 # Log file
 bind_log: "data/named.run"
+
+# Advanced logging configuration
+bind_logging: {}
+#   channels:
+#     - name: syslog_daemon
+#       syslog: daemon
+#       severity: dynamic
+#       print_time: true
+#       print_severity: true
+#       print_category: true
+
+# categories:
+#   - name: default
+#     channel: syslog_daemon

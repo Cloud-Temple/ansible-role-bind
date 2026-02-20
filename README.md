@@ -50,6 +50,7 @@ The packages `python-netaddr` (required for the [`ipaddr`](https://docs.ansible.
 | `bind_listen_ipv6`          | `['::1']`            | A list of the IPv6 address of the network interface(s) to listen on                                                                  |
 | `bind_listen_ipv6_port`     | `[53]`               | A list of port numbers to listen on for IPv6 addresses.                                                                              |
 | `bind_log`                  | `data/named.run`     | Path to the log file                                                                                                                 |
+| `bind_logging`              | `{}`                 | Dictionary for advanced logging configuration (channels and categories).                                                             |
 | `bind_other_logs`           | -                    | A list of logging channels to configure, with a separate mapping for each zone, with relevant details                                |
 | `bind_query_log`            | -                    | A mapping with keyss `file:` (e.g. `data/query.log`), `versions:`, `size:`. When defined, this will enable the query log             |
 | `bind_recursion`            | `false`              | Determines whether requests for which the DNS server is not authoritative should be forwarded†.                                      |
@@ -295,6 +296,97 @@ Each primary can only have one key (per view).
 
 A check will be performed to ensure the key is actually present in the `bind_dns_keys` mapping. This will add a server statement for the `a` in `bind_auth_file` on a secondary server containing the specified key.
 
+### Logging Configuration
+
+You can configure advanced logging using the `bind_logging` variable. This allows you to define custom channels (including syslog) and categories.
+
+```Yaml
+bind_logging:
+  channels:
+    - name: "syslog_daemon"
+      syslog: "daemon"
+      severity: "info"
+      print_time: true
+      print_severity: true
+      print_category: true
+    - name: "file_channel"
+      file: "data/named.log"
+      versions: 3
+      size: "5m"
+      severity: "dynamic"
+      print_time: true
+  categories:
+    # [X] Logs généraux par défaut (fallback si aucune catégorie spécifique)
+    - { name: "default", channel: "syslog_daemon" }
+
+    # [X] Messages généraux de fonctionnement du serveur DNS
+    - { name: "general", channel: "syslog_daemon" }
+
+    # [X] Événements liés à la sécurité (ACL refusées, attaques, DNSSEC failures)
+    - { name: "security", channel: "syslog_daemon" }
+
+    # [X] Chargement / rechargement de configuration
+    - { name: "config", channel: "syslog_daemon" }
+
+    # [0] Activité du resolver (requêtes récursives, forwarders) - À garder si serveur récursif
+    - { name: "resolver", channel: "syslog_daemon" }
+
+    # [X] Transferts de zone entrants (AXFR/IXFR reçus)
+    - { name: "xfer-in", channel: "syslog_daemon" }
+
+    # [X] Transferts de zone sortants (AXFR/IXFR envoyés)
+    - { name: "xfer-out", channel: "syslog_daemon" }
+
+    # [X] Notifications DNS (NOTIFY envoyés/reçus)
+    - { name: "notify", channel: "syslog_daemon" }
+
+    # # ==========================
+    # # [-] DEBUG / VERBEUX
+    # # ==========================
+
+    # # [-] Log chaque requête DNS (énorme volume)
+    # - { name: "queries", channel: "syslog_daemon" }
+
+    # # [-] Serveurs lame (très bruyant en recursive)
+    # - { name: "lame-servers", channel: "syslog_daemon" }
+
+    # # [-] Détails DNSSEC (debug validation)
+    # - { name: "dnssec", channel: "syslog_daemon" }
+
+    # # [-] Paquets non appariés / malformés
+    # - { name: "unmatched", channel: "syslog_daemon" }
+
+    # # [-] EDNS fallback
+    # - { name: "edns-disabled", channel: "syslog_daemon" }
+
+    # # [-] Debug base de données interne
+    # - { name: "database", channel: "syslog_daemon" }
+
+    # # [-] Statistiques internes
+    # - { name: "statistics", channel: "syslog_daemon" }
+
+    # # [-] Activité client interne
+    # - { name: "client", channel: "syslog_daemon" }
+
+    # # [-] Dispatch interne (bas niveau)
+    # - { name: "dispatch", channel: "syslog_daemon" }
+
+    # # [-] Réseau bas niveau
+    # - { name: "network", channel: "syslog_daemon" }
+
+    # # [-] Update dynamique (DDNS)
+    # - { name: "update", channel: "syslog_daemon" }
+
+    # # [-] DNSSEC trust anchor telemetry
+    # - { name: "trust-anchor-telemetry", channel: "syslog_daemon" }
+
+    # # [-] Rate limiting
+    # - { name: "rate-limit", channel: "syslog_daemon" }
+
+    # # [-] Response Policy Zones (RPZ)
+    # - { name: "rpz", channel: "syslog_daemon" }
+```
+
 ## Dependencies
 
 No dependencies.
@@ -378,7 +470,7 @@ MOLECULE_DISTRO=debian9 molecule converge
 
 You can run the acceptance tests on all servers with `molecule verify`.
 
-> Verification tests are done using "dig" lookup module by quering dns records and validating responses. This requires direct network communication between Ansible controller node (your machine running Ansible) and the target docker container. 
+> Verification tests are done using "dig" lookup module by quering dns records and validating responses. This requires direct network communication between Ansible controller node (your machine running Ansible) and the target docker container.
 
 ---
 
