@@ -316,74 +316,74 @@ bind_logging:
       severity: "dynamic"
       print_time: true
   categories:
-    # [X] Default general logs (fallback if no specific category)
+    # Default general logs (fallback if no specific category)
     - { name: "default", channel: "syslog_daemon" }
 
-    # [X] General DNS server operation messages
+    # General DNS server operation messages
     - { name: "general", channel: "syslog_daemon" }
 
-    # [X] Security-related events (denied ACLs, attacks, DNSSEC failures)
+    # Security-related events (denied ACLs, attacks, DNSSEC failures)
     - { name: "security", channel: "syslog_daemon" }
 
-    # [X] Configuration loading / reloading
+    # Configuration loading / reloading
     - { name: "config", channel: "syslog_daemon" }
 
-    # [0] Resolver activity (recursive queries, forwarders) - Keep if recursive server
+    # Resolver activity (recursive queries, forwarders) - Keep if recursive server
     - { name: "resolver", channel: "syslog_daemon" }
 
-    # [X] Incoming zone transfers (received AXFR/IXFR)
+    # Incoming zone transfers (received AXFR/IXFR)
     - { name: "xfer-in", channel: "syslog_daemon" }
 
-    # [X] Outgoing zone transfers (sent AXFR/IXFR)
+    # Outgoing zone transfers (sent AXFR/IXFR)
     - { name: "xfer-out", channel: "syslog_daemon" }
 
-    # [X] DNS notifications (sent/received NOTIFY)
+    # DNS notifications (sent/received NOTIFY)
     - { name: "notify", channel: "syslog_daemon" }
 
     # ==========================
-    # [-] DEBUG / VERBOSE
+    # DEBUG / VERBOSE
     # ==========================
 
-    # [-] Log every DNS query (huge volume)
+    # Log every DNS query (huge volume)
     # - { name: "queries", channel: "syslog_daemon" }
 
-    # [-] Lame servers (very noisy in recursive mode)
+    # Lame servers (very noisy in recursive mode)
     # - { name: "lame-servers", channel: "syslog_daemon" }
 
-    # [-] DNSSEC details (validation debug)
+    # DNSSEC details (validation debug)
     # - { name: "dnssec", channel: "syslog_daemon" }
 
-    # [-] Unmatched / malformed packets
+    # Unmatched / malformed packets
     # - { name: "unmatched", channel: "syslog_daemon" }
 
-    # [-] EDNS fallback
+    # EDNS fallback
     # - { name: "edns-disabled", channel: "syslog_daemon" }
 
-    # [-] Internal database debug
+    # Internal database debug
     # - { name: "database", channel: "syslog_daemon" }
 
-    # [-] Internal statistics
+    # Internal statistics
     # - { name: "statistics", channel: "syslog_daemon" }
 
-    # [-] Internal client activity
+    # Internal client activity
     # - { name: "client", channel: "syslog_daemon" }
 
-    # [-] Internal dispatch (low level)
+    # Internal dispatch (low level)
     # - { name: "dispatch", channel: "syslog_daemon" }
 
-    # [-] Low-level network
+    # Low-level network
     # - { name: "network", channel: "syslog_daemon" }
 
-    # [-] Dynamic update (DDNS)
+    # Dynamic update (DDNS)
     # - { name: "update", channel: "syslog_daemon" }
 
-    # [-] DNSSEC trust anchor telemetry
+    # DNSSEC trust anchor telemetry
     # - { name: "trust-anchor-telemetry", channel: "syslog_daemon" }
 
-    # [-] Rate limiting
+    # Rate limiting
     # - { name: "rate-limit", channel: "syslog_daemon" }
 
-    # [-] Response Policy Zones (RPZ)
+    # Response Policy Zones (RPZ)
     # - { name: "rpz", channel: "syslog_daemon" }
 ```
 
