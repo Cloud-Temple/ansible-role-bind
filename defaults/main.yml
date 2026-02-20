@@ -94,7 +94,6 @@ bind_logging: {}
 #       print_time: true
 #       print_severity: true
 #       print_category: true
-
-# categories:
-#   - name: default
-#     channel: syslog_daemon
+#   categories:
+#     - name: default
+#       channel: syslog_daemon
