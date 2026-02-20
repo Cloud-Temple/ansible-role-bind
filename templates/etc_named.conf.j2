@@ -38,8 +38,8 @@ options {
 
   rrset-order { order {{ bind_rrset_order }}; };
 
-{% if bind_dnssec_enable %}  dnssec-enable {{ bind_dnssec_enable }};{% endif %}
-  dnssec-validation {{ bind_dnssec_validation }};
+{% if bind_dnssec_enable %}  dnssec-enable {{ bind_dnssec_enable }};{% endif %}
+  dnssec-validation {{ bind_dnssec_validation }};
 
   /* Path to ISC DLV key */
   bindkeys-file "{{ bind_bindkeys_file }}";
@@ -66,11 +66,48 @@ statistics-channels {
 {% endif %}
 
 logging {
+{% if bind_logging is defined and bind_logging.channels is defined %}
+  // Custom channels from bind_logging
+{% for channel in bind_logging.channels %}
+  channel {{ channel.name }} {
+{% if channel.syslog is defined %}
+    syslog {{ channel.syslog }};
+{% endif %}
+{% if channel.file is defined %}
+    file "{{ channel.file }}"
+{% if channel.versions is defined %} versions {{ channel.versions }}{% endif %}
+{% if channel.size is defined %} size {{ channel.size }}{% endif %};
+{% endif %}
+{% if channel.severity is defined %}
+    severity {{ channel.severity }};
+{% endif %}
+{% if channel.print_time | default(false) %}
+    print-time yes;
+{% endif %}
+{% if channel.print_severity | default(false) %}
+    print-severity yes;
+{% endif %}
+{% if channel.print_category | default(false) %}
+    print-category yes;
+{% endif %}
+  };
+{% endfor %}
+{% endif %}
+
+  // Default debug channel (upstream behavior)
   channel default_debug {
     file "{{ bind_log }}";
     severity dynamic;
     print-time yes;
   };
+
+{% if bind_logging is defined and bind_logging.categories is defined %}
+  // Custom categories from bind_logging
+{% for cat in bind_logging.categories %}
+  category {{ cat.name }} { {{ cat.channel }}; };
+{% endfor %}
+{% endif %}
+
 {% if bind_query_log is defined %}
   channel querylog {
 {% if bind_query_log.file is defined %}
